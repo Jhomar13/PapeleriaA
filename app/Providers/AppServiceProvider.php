@@ -18,6 +18,7 @@ use App\Models\Rol;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Logout;
 use App\Models\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password; // No olvides esta importación
 
 
@@ -39,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        URL::forceScheme('https'); // Forzar HTTPS en todas las URLs generadas
         // Conectas el mismo observador a todos los modelos que quieras
         Producto::observe(AuditoriaObserver::class);
         Categoria::observe(AuditoriaObserver::class);

@@ -43,29 +43,67 @@ class ConfiguracionController extends Controller
     public function backupDatabase()
     {
         $filename = 'backup_artes_' . date('Y-m-d_H-i-s') . '.sql';
-        $path = storage_path('app/backups/' . $filename);
-
-        if (!file_exists(storage_path('app/backups'))) {
-            mkdir(storage_path('app/backups'), 0755, true);
+    
+    $tables = \DB::select("SELECT tablename FROM pg_tables WHERE schemaname = 'public'");
+    
+    $sql = "-- Backup generado el " . date('Y-m-d H:i:s') . "\n";
+    $sql .= "-- Base de datos: " . env('DB_DATABASE') . "\n\n";
+    
+    foreach ($tables as $table) {
+        $tableName = $table->tablename;
+        
+        // Obtener estructura de la tabla
+        $sql .= "-- Tabla: {$tableName}\n";
+        $sql .= "DROP TABLE IF EXISTS \"{$tableName}\" CASCADE;\n";
+        
+        // Obtener columnas
+        $columns = \DB::select("
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns 
+            WHERE table_name = ? AND table_schema = 'public'
+            ORDER BY ordinal_position
+        ", [$tableName]);
+        
+        if (count($columns) > 0) {
+            $sql .= "CREATE TABLE \"{$tableName}\" (\n";
+            $colDefs = [];
+            foreach ($columns as $col) {
+                $def = "    \"{$col->column_name}\" {$col->data_type}";
+                if ($col->is_nullable === 'NO') {
+                    $def .= " NOT NULL";
+                }
+                if ($col->column_default) {
+                    $def .= " DEFAULT {$col->column_default}";
+                }
+                $colDefs[] = $def;
+            }
+            $sql .= implode(",\n", $colDefs);
+            $sql .= "\n);\n\n";
+            
+            // Obtener datos
+            $rows = \DB::table($tableName)->get();
+            if ($rows->count() > 0) {
+                foreach ($rows as $row) {
+                    $values = [];
+                    foreach ((array)$row as $value) {
+                        if (is_null($value)) {
+                            $values[] = 'NULL';
+                        } elseif (is_numeric($value)) {
+                            $values[] = $value;
+                        } else {
+                            $values[] = "'" . addslashes($value) . "'";
+                        }
+                    }
+                    $sql .= "INSERT INTO \"{$tableName}\" VALUES (" . implode(', ', $values) . ");\n";
+                }
+                $sql .= "\n";
+            }
         }
-
-        $command = sprintf(
-            'PGPASSWORD=%s pg_dump -U %s -h %s -p %s %s > %s',
-            env('DB_PASSWORD'),
-            env('DB_USERNAME'),
-            env('DB_HOST'),
-            env('DB_PORT'),
-            env('DB_DATABASE'),
-            $path
-        );
-
-        exec($command, $output, $returnVar);
-
-        if ($returnVar === 0 && file_exists($path)) {
-            return response()->download($path, $filename)->deleteFileAfterSend(true);
-        }
-
-        return back()->with('error', 'Error al generar el backup de la base de datos');
+    }
+    
+    return response($sql)
+        ->header('Content-Type', 'application/sql')
+        ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
     }
 
     public function exportarDatosNegocio()

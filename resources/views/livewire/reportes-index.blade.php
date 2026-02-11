@@ -78,7 +78,7 @@
         </a>
 
         {{-- Solo el Administrador y el Auditor pueden ver el acceso a Seguridad --}}
-        @if(in_array(Auth::user()->rol->nombrerol, ['Administrador', 'Auditor']))
+        @if(in_array(Auth::user()->rol->nombrerol, ['Administrador', 'Auditor', 'Propietario']))
         <a href="{{ route('admin.reportes.seguridad') }}" class="block cursor-pointer bg-white rounded-xl shadow p-6 hover:shadow-lg transition group">
             <div class="bg-white p-4 rounded-xl shadow-[10px_12px_25px_rgba(0,0,0,0.28)] flex items-center gap-4 group-hover:scale-105 transition-transform">
                 <div class="w-15 h-15 flex items-center justify-center text-red-500">

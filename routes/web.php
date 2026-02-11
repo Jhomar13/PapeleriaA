@@ -63,7 +63,7 @@ Route::middleware(['auth'])->group(function () {
 // PERMISOS: Admin, Vendedor y Auditor
 // (El auditor necesita ver esto para cruzar datos, el vendedor para consultar)
 // ============================================
-Route::middleware(['auth', 'verified', 'session.timeout', 'role:Administrador|Empleado|Auditor'])->group(function () {
+Route::middleware(['auth', 'verified', 'session.timeout', 'role:Administrador|Empleado|Auditor|Propietario'])->group(function () {
     
     // Inventario y Proveedores
     Route::get('/productos', Productos::class)->name('productos');
@@ -97,7 +97,7 @@ Route::middleware(['auth', 'verified', 'session.timeout', 'role:Administrador|Em
 // PERMISOS: Solo Admin y Vendedor
 // (EL AUDITOR TIENE PROHIBIDO ENTRAR AQUÍ)
 // ============================================
-Route::middleware(['auth', 'session.timeout', 'role:Administrador|Empleado'])->group(function () {
+Route::middleware(['auth', 'session.timeout', 'role:Administrador|Empleado|Propietario'])->group(function () {
     Route::get('/ventas/create', [VentaController::class, 'create'])->name('ventas.create');
     Route::post('/ventas/buscar-producto', [VentaController::class, 'buscarProducto'])->name('ventas.buscar-producto');
     Route::post('/ventas/confirmar', [VentaController::class, 'confirmarVenta'])->name('ventas.confirmar');
@@ -109,7 +109,7 @@ Route::middleware(['auth', 'session.timeout', 'role:Administrador|Empleado'])->g
 // PERMISOS: Admin y Auditor
 // (El Vendedor NO entra aquí)
 // ============================================
-Route::middleware(['auth', 'role:Administrador|Auditor'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:Administrador|Auditor|Propietario'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/auditoria', AuditoriaIndex::class)->name('auditoria');
     Route::get('/logs', LogIndex::class)->name('logs');
     Route::get('/reportes/seguridad', ReportesGraficos::class)->name('reportes.seguridad');
